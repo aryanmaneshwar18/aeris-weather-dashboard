@@ -862,11 +862,20 @@ body.weather-night .stars-layer {
 .alert-dismiss {
     color: #9ca3af;
     font-size: 16px;
-    padding: 4px;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .alert-dismiss:hover {
     color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .error-box {
@@ -912,10 +921,20 @@ body.weather-night .stars-layer {
 #closeError {
     font-size: 18px;
     color: #9ca3af;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 #closeError:hover {
     color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================================================
