@@ -1130,7 +1130,7 @@ function updateMapMarker(lat, lon) {
                 </div>
             </div>
         `;
-        STATE.mapMarker.bindPopup(popupContent).openPopup();
+        STATE.mapMarker.bindPopup(popupContent);
     }
 }
 
