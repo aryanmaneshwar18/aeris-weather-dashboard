@@ -42,6 +42,8 @@ const STATE = {
     mapInstance: null,
     mapTileLayer: null,
     weatherTileLayer: null,
+    mapMarker: null,
+    activeBasemap: localStorage.getItem("aeris_basemap") || "streets",
     activeMapLayer: "temp_new",
     autoRefreshTimer: null,
     clockTimer: null,
@@ -174,6 +176,8 @@ const DOM = {
     mapTargetCoords: document.getElementById("mapTargetCoords"),
     activeLayerName: document.getElementById("activeLayerName"),
     mapLayerButtons: document.querySelectorAll(".map-layer-btn"),
+    mapTypeButtons: document.querySelectorAll(".map-type-btn"),
+    mapLocateBtn: document.getElementById("mapLocateBtn"),
 
     // Settings
     settingUnitSelect: document.getElementById("settingUnitSelect"),
@@ -991,27 +995,143 @@ DOM.closeAlert?.addEventListener("click", () => {
    VIEW 3: INTERACTIVE LEAFLET WEATHER MAP
    ========================================================================== */
 
+/* ==========================================================================
+   VIEW 3: INTERACTIVE LEAFLET WEATHER MAP (GOOGLE MAPS STYLE)
+   ========================================================================== */
+
+const BASEMAP_TILES = {
+    streets: {
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    },
+    satellite: {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
+        maxZoom: 18
+    },
+    dark: {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        attribution: '&copy; Esri, HERE, DeLorme, MapmyIndia, OpenStreetMap contributors',
+        maxZoom: 16
+    },
+    terrain: {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        attribution: '&copy; Esri, HERE, DeLorme, TomTom, Intermap, increment P Corp., GEBCO, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), swisstopo, MapmyIndia, and the GIS User Community',
+        maxZoom: 18
+    }
+};
+
 function initWeatherMap() {
     if (STATE.mapInstance || !DOM.weatherMap || typeof L === "undefined") return;
 
-    // Center on active city coords or London default
-    const lat = STATE.currentWeather?.coord?.lat || 51.5074;
-    const lon = STATE.currentWeather?.coord?.lon || -0.1278;
+    // Center on active city coords or fallback
+    const lat = STATE.currentWeather?.coord?.lat || 22.72;
+    const lon = STATE.currentWeather?.coord?.lon || 75.83;
 
     STATE.mapInstance = L.map("weatherMap", {
         center: [lat, lon],
-        zoom: 7,
-        zoomControl: true
+        zoom: 8,
+        zoomControl: true,
+        scrollWheelZoom: true
     });
 
-    // Dark futuristic basemap via Esri World Dark Gray Base (No API key required)
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
-        attribution: '&copy; Esri, HERE, DeLorme, MapmyIndia, OpenStreetMap contributors',
-        maxZoom: 16
+    // Create a dedicated custom pane for Weather Radar overlays
+    // Leaflet tilePane has z-index 200, so we set radarPane to 350 to ensure it's ALWAYS on top of any basemap
+    if (!STATE.mapInstance.getPane("weatherRadarPane")) {
+        const radarPane = STATE.mapInstance.createPane("weatherRadarPane");
+        radarPane.style.zIndex = 350;
+        radarPane.style.pointerEvents = "none";
+    }
+
+    // Set Basemap Layer
+    updateBasemapLayer(STATE.activeBasemap);
+
+    // Attach OpenWeather Radar Tile Layer (if active)
+    updateMapWeatherTileLayer();
+
+    // Attach Location Target Pin
+    updateMapMarker(lat, lon);
+
+    // Google Maps Style Click-anywhere interaction: inspect clicked location!
+    STATE.mapInstance.on("click", (e) => {
+        const clickedLat = e.latlng.lat;
+        const clickedLon = e.latlng.lng;
+        showToast(`Inspecting coordinates: ${clickedLat.toFixed(2)}°, ${clickedLon.toFixed(2)}°`, "info");
+        executeWeatherTelemetry(null, { lat: clickedLat, lon: clickedLon });
+    });
+}
+
+function updateBasemapLayer(type = "streets") {
+    if (!STATE.mapInstance) return;
+
+    if (STATE.mapTileLayer) {
+        STATE.mapInstance.removeLayer(STATE.mapTileLayer);
+    }
+
+    const config = BASEMAP_TILES[type] || BASEMAP_TILES.streets;
+    STATE.activeBasemap = type;
+    localStorage.setItem("aeris_basemap", type);
+
+    STATE.mapTileLayer = L.tileLayer(config.url, {
+        attribution: config.attribution,
+        maxZoom: config.maxZoom
     }).addTo(STATE.mapInstance);
 
-    // Attach OpenWeather Radar Tile Layer
-    updateMapWeatherTileLayer();
+    // Keep radar layer on top if present
+    if (STATE.weatherTileLayer) {
+        STATE.weatherTileLayer.bringToFront();
+    }
+}
+
+function updateMapMarker(lat, lon) {
+    if (!STATE.mapInstance || typeof L === "undefined") return;
+
+    // Create Google Maps style custom marker pin with pulse animation
+    const customPinIcon = L.divIcon({
+        className: "gmap-custom-pin-wrapper",
+        html: `
+            <div class="gmap-marker-pin">
+                <div class="gmap-marker-pulse"></div>
+                <div class="gmap-marker-core"></div>
+            </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+    });
+
+    if (STATE.mapMarker) {
+        STATE.mapMarker.setLatLng([lat, lon]);
+    } else {
+        STATE.mapMarker = L.marker([lat, lon], { icon: customPinIcon }).addTo(STATE.mapInstance);
+    }
+
+    // Attach Google Maps style popup with live temperature & details
+    if (STATE.currentWeather) {
+        const city = STATE.currentWeather.name || "Target Location";
+        const country = STATE.currentWeather.sys?.country || "";
+        const temp = Math.round(STATE.currentWeather.main?.temp ?? 0);
+        const unitSymbol = STATE.unit === "metric" ? "°C" : "°F";
+        const desc = STATE.currentWeather.weather?.[0]?.description || "";
+        const humidity = STATE.currentWeather.main?.humidity ?? "--";
+        const wind = STATE.currentWeather.wind?.speed ?? "--";
+
+        const popupContent = `
+            <div class="gmap-popup-card">
+                <div class="gmap-popup-header">
+                    <span class="gmap-popup-city">📍 ${sanitizeHTML(city)}${country ? ", " + sanitizeHTML(country) : ""}</span>
+                    <span class="gmap-popup-temp">${temp}${unitSymbol}</span>
+                </div>
+                <div class="gmap-popup-desc">${sanitizeHTML(desc)}</div>
+                <div class="gmap-popup-stats">
+                    <span>💧 ${humidity}% Humidity</span>
+                    <span>💨 ${wind} m/s Wind</span>
+                </div>
+            </div>
+        `;
+        STATE.mapMarker.bindPopup(popupContent).openPopup();
+    }
 }
 
 function updateMapWeatherTileLayer() {
@@ -1019,15 +1139,23 @@ function updateMapWeatherTileLayer() {
 
     if (STATE.weatherTileLayer) {
         STATE.mapInstance.removeLayer(STATE.weatherTileLayer);
+        STATE.weatherTileLayer = null;
+    }
+
+    const layer = STATE.activeMapLayer;
+    if (layer === "none") {
+        DOM.activeLayerName.textContent = "Clean Street Cartography (Radar Off)";
+        return;
     }
 
     const key = getActiveApiKey();
-    const layer = STATE.activeMapLayer;
     const tileUrl = `https://tile.openweathermap.org/map/${layer}/{z}/{x}/{y}.png?appid=${key}`;
 
     STATE.weatherTileLayer = L.tileLayer(tileUrl, {
-        opacity: 0.65,
-        maxZoom: 18
+        pane: "weatherRadarPane",
+        opacity: 0.75,
+        maxZoom: 18,
+        tileSize: 256
     }).addTo(STATE.mapInstance);
 
     const layerTitles = {
@@ -1035,7 +1163,8 @@ function updateMapWeatherTileLayer() {
         precipitation_new: "Precipitation & Rain Radar Active",
         clouds_new: "Cloud Mass Satellite Active",
         wind_new: "Wind Vector Isobars Active",
-        pressure_new: "Atmospheric Pressure Contours Active"
+        pressure_new: "Atmospheric Pressure Contours Active",
+        none: "Clean Map Mode"
     };
 
     DOM.activeLayerName.textContent = layerTitles[layer] || "Radar Active";
@@ -1048,12 +1177,51 @@ function syncWeatherMap() {
     if (!STATE.mapInstance || !STATE.currentWeather) return;
 
     const { lat, lon } = STATE.currentWeather.coord;
-    STATE.mapInstance.setView([lat, lon], 7);
+    STATE.mapInstance.setView([lat, lon], 7, { animate: true });
     STATE.mapInstance.invalidateSize();
+
+    // Update pin position and popup
+    updateMapMarker(lat, lon);
 
     DOM.mapTargetName.textContent = `${STATE.currentWeather.name}, ${STATE.currentWeather.sys.country}`;
     DOM.mapTargetCoords.textContent = `${lat.toFixed(2)}° N, ${lon.toFixed(2)}° E`;
 }
+
+// Basemap Switcher (Streets, Satellite, Dark, Terrain)
+DOM.mapTypeButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        DOM.mapTypeButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const mapType = btn.dataset.mapType;
+        updateBasemapLayer(mapType);
+    });
+});
+
+// Locate Me button directly inside the Map View (Google Maps style)
+DOM.mapLocateBtn?.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+        showError("Geolocation Unavailable", "Browser does not support geolocation positioning.");
+        return;
+    }
+
+    showToast("Finding your GPS location...", "info");
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const coords = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+            };
+            executeWeatherTelemetry(null, coords);
+            showToast("Centered on your current location!", "info");
+        },
+        (error) => {
+            console.warn("Map geolocation error:", error);
+            showError("Location Access Denied", "Please allow location access in your browser settings to pinpoint your location.");
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+    );
+});
 
 // Map layer toggle buttons
 DOM.mapLayerButtons.forEach(btn => {
@@ -1717,11 +1885,35 @@ document.addEventListener("DOMContentLoaded", () => {
     DOM.celsiusBtn.classList.toggle("active", STATE.unit === "metric");
     DOM.fahrenheitBtn.classList.toggle("active", STATE.unit === "imperial");
 
-    // Update footer year clock
-    if (DOM.footerClock) {
-        DOM.footerClock.textContent = `UTC ${new Date().getFullYear()} • PRO EDITION`;
+    // Sync active basemap button on load
+    if (DOM.mapTypeButtons) {
+        DOM.mapTypeButtons.forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.mapType === STATE.activeBasemap);
+        });
     }
 
-    // Execute Initial Telemetry Boot
-    executeWeatherTelemetry(STATE.activeCity);
+    // Attempt geolocation on initial boot if permission is already granted, else load default city
+    if (navigator.geolocation && navigator.permissions) {
+        navigator.permissions.query({ name: "geolocation" }).then(res => {
+            if (res.state === "granted") {
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        executeWeatherTelemetry(null, {
+                            lat: pos.coords.latitude,
+                            lon: pos.coords.longitude
+                        });
+                    },
+                    () => executeWeatherTelemetry(STATE.activeCity),
+                    { timeout: 5000, enableHighAccuracy: true }
+                );
+            } else {
+                executeWeatherTelemetry(STATE.activeCity);
+            }
+        }).catch(() => {
+            executeWeatherTelemetry(STATE.activeCity);
+        });
+    } else {
+        // Execute Initial Telemetry Boot with default city
+        executeWeatherTelemetry(STATE.activeCity);
+    }
 });

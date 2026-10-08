@@ -760,14 +760,34 @@
                         <p class="section-subtitle">Real-time geospatial cartography centered on your active telemetry coordinates with live OpenWeather layers.</p>
                     </div>
 
+                    <div class="map-controls-bar">
+                        <!-- Basemap style switcher (Google Maps style) -->
+                        <div class="map-style-switcher">
+                            <span class="layer-selector-label">MAP VIEW:</span>
+                            <div class="map-type-buttons" id="mapTypeGroup">
+                                <button class="map-type-btn active" data-map-type="streets" title="Google-style detailed street & road map">🗺️ Streets</button>
+                                <button class="map-type-btn" data-map-type="satellite" title="High-res Satellite & Aerial imagery">🛰️ Satellite</button>
+                                <button class="map-type-btn" data-map-type="dark" title="Dark Sci-Fi Tactical map">🌌 Dark</button>
+                                <button class="map-type-btn" data-map-type="terrain" title="Topographic terrain & relief">⛰️ Terrain</button>
+                            </div>
+                        </div>
+
+                        <!-- Locate My Device GPS Button (Google Maps style) -->
+                        <button class="map-locate-btn" id="mapLocateBtn" title="Show my current location on map">
+                            <span class="locate-icon">🎯</span>
+                            <span>My Location</span>
+                        </button>
+                    </div>
+
                     <div class="map-layer-selector">
-                        <span class="layer-selector-label">RADAR LAYER:</span>
+                        <span class="layer-selector-label">RADAR WEATHER OVERLAY:</span>
                         <div class="layer-buttons-group">
                             <button class="map-layer-btn active" data-layer="temp_new">Thermal (°C)</button>
                             <button class="map-layer-btn" data-layer="precipitation_new">Precipitation</button>
                             <button class="map-layer-btn" data-layer="clouds_new">Cloud Mass</button>
                             <button class="map-layer-btn" data-layer="wind_new">Wind Velocity</button>
                             <button class="map-layer-btn" data-layer="pressure_new">Isobars</button>
+                            <button class="map-layer-btn" data-layer="none">None (Clean Map)</button>
                         </div>
                     </div>
                 </div>
