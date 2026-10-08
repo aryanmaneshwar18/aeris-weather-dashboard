@@ -164,6 +164,9 @@
                     <div class="search-suggestions" id="quickPills">
                         <span class="chips-label">PROBES:</span>
                         <button class="city-chip" data-city="Indore" type="button">Indore</button>
+                        <button class="city-chip" data-city="Bhopal" type="button">Bhopal</button>
+                        <button class="city-chip" data-city="Delhi" type="button">Delhi</button>
+                        <button class="city-chip" data-city="Mumbai" type="button">Mumbai</button>
                         <button class="city-chip" data-city="Tokyo" type="button">Tokyo</button>
                         <button class="city-chip" data-city="London" type="button">London</button>
                         <button class="city-chip" data-city="New York" type="button">New York</button>
@@ -213,7 +216,17 @@
                     <strong id="errorTitle">Telemetry Failure</strong>
                     <p id="errorMessage">Unable to establish atmospheric connection.</p>
                 </div>
+                <button id="retryFetchBtn" class="error-retry-btn" type="button">Try Again</button>
                 <button id="closeError" aria-label="Dismiss error">✕</button>
+            </div>
+
+            <!-- OFFLINE MODE CACHED BANNER -->
+            <div id="offlineBanner" class="offline-banner hidden" role="status">
+                <div class="offline-icon">⚡</div>
+                <div class="offline-text">
+                    <strong>OFFLINE MODE</strong>
+                    <span id="offlineTimestamp">Displaying cached telemetry synchronized 2 min ago</span>
+                </div>
             </div>
 
             <!-- ==============================================
@@ -221,27 +234,55 @@
             =============================================== -->
             <div id="viewHome" class="view-section active">
 
-                <!-- AI ASSISTANT HERO INTERFACE -->
-                <section class="assistant" id="assistantSection" aria-label="Aeris AI Meteorological Assistant">
+                <!-- AERIS AI AVATAR & WEATHER BRIEFING INTERFACE -->
+                <section class="assistant" id="assistantSection" aria-label="Aeris AI Atmospheric Command & Weather Briefing">
                     <div class="assistant-backdrop-grid"></div>
 
                     <div class="assistant-content">
                         <div class="assistant-badge">
                             <span class="pulse-beacon"></span>
-                            <span>AERIS SYNAPSE V2 • WEATHER AGENT</span>
+                            <span>AERIS SYNAPSE V2 • AI ATMOSPHERIC AGENT</span>
                             <span class="assistant-state-tag" id="assistantModeTag">ACTIVE SCAN</span>
                         </div>
 
-                        <div class="assistant-message" id="assistantSpeechBubble">
-                            <div class="message-decoration"></div>
-                            <div class="assistant-greeting">
-                                <span class="assistant-speaker">AERIS INTEL</span>
-                                <span class="assistant-timestamp" id="assistantTimestamp">LIVE</span>
+                        <!-- AI WEATHER BRIEFING CARD -->
+                        <div class="assistant-briefing-card" id="assistantBriefingCard">
+                            <div class="briefing-header">
+                                <div class="briefing-title-group">
+                                    <span class="briefing-kicker">ATMOSPHERIC SYNTHESIS</span>
+                                    <h2 class="briefing-title">AERIS BRIEFING</h2>
+                                </div>
+                                <span class="assistant-timestamp" id="assistantTimestamp">LIVE TELEMETRY</span>
                             </div>
-                            <strong id="assistantHeadline">Atmospheric Synchrony Established.</strong>
-                            <p id="assistantSpeechText">
-                                I am <b>Aeris</b>, monitoring tropospheric conditions worldwide. Ready for atmospheric telemetry analysis.
+
+                            <strong id="assistantHeadline" class="briefing-headline">Analyzing regional troposphere...</strong>
+                            <p id="assistantSpeechText" class="briefing-summary">
+                                Monitoring atmospheric moisture, wind vectors, and barometric stability for current coordinates.
                             </p>
+
+                            <!-- AI Briefing Diagnostic Chips -->
+                            <div class="briefing-telemetry-row">
+                                <div class="briefing-pill">
+                                    <span class="pill-label">TEMP TREND</span>
+                                    <strong id="briefingTempTrend" class="pill-val">Steady</strong>
+                                </div>
+                                <div class="briefing-pill">
+                                    <span class="pill-label">RAIN RISK</span>
+                                    <strong id="briefingRainRisk" class="pill-val">Low (&lt;10%)</strong>
+                                </div>
+                                <div class="briefing-pill">
+                                    <span class="pill-label">WIND</span>
+                                    <strong id="briefingWindCond" class="pill-val">Gentle</strong>
+                                </div>
+                                <div class="briefing-pill">
+                                    <span class="pill-label">COMFORT</span>
+                                    <strong id="briefingComfort" class="pill-val">Favorable</strong>
+                                </div>
+                                <div class="briefing-pill highlight">
+                                    <span class="pill-label">RECOMMENDATION</span>
+                                    <strong id="briefingRecommendation" class="pill-val">Ideal for outdoors</strong>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -302,7 +343,7 @@
                                 <div class="location-info">
                                     <div class="location-name-row">
                                         <h2 id="cityName">London, GB</h2>
-                                        <span class="coords-badge" id="cityCoords">51.51° N, 0.13° W</span>
+                                        <button class="coords-badge" id="cityCoords" title="Click to copy coordinates" aria-label="Copy coordinates">51.51° N, 0.13° W</button>
                                     </div>
                                     <span id="countryName" class="country-sub">United Kingdom • Greenwich Meridian</span>
                                 </div>
@@ -370,7 +411,7 @@
                             </div>
                         </div>
 
-                        <!-- Secondary Meteorological Metrics Bar -->
+                        <!-- Meteorological Metrics Bar (10 Comprehensive Sensor Metrics) -->
                         <div class="weather-stats">
                             <div class="stat-cell" id="statHumidity">
                                 <div class="stat-icon-wrap stat-blue">
@@ -379,9 +420,7 @@
                                 <div class="stat-data">
                                     <span class="stat-label">Humidity</span>
                                     <strong id="humidity" class="stat-value">68%</strong>
-                                    <div class="mini-progress-bar">
-                                        <div class="progress-fill fill-blue" id="humidityBar" style="width: 68%;"></div>
-                                    </div>
+                                    <span class="stat-sub" id="humidityDesc">Moderate moisture</span>
                                 </div>
                             </div>
 
@@ -390,9 +429,20 @@
                                     <span class="stat-icon">≋</span>
                                 </div>
                                 <div class="stat-data">
-                                    <span class="stat-label">Wind Velocity</span>
+                                    <span class="stat-label">Wind Speed</span>
                                     <strong id="wind" class="stat-value">4.2 m/s</strong>
-                                    <span class="stat-sub" id="windDirectionText">South-West (210°)</span>
+                                    <span class="stat-sub" id="windSpeedDesc">Gentle breeze</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-cell" id="statWindDir">
+                                <div class="stat-icon-wrap stat-cyan">
+                                    <span class="stat-icon">🧭</span>
+                                </div>
+                                <div class="stat-data">
+                                    <span class="stat-label">Wind Direction</span>
+                                    <strong id="windDirectionVal" class="stat-value">210° SW</strong>
+                                    <span class="stat-sub" id="windDirectionText">South-West vector</span>
                                 </div>
                             </div>
 
@@ -415,6 +465,61 @@
                                     <span class="stat-label">Visibility</span>
                                     <strong id="visibility" class="stat-value">10.0 km</strong>
                                     <span class="stat-sub" id="visibilityRating">Optimal Sight</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-cell" id="statClouds">
+                                <div class="stat-icon-wrap stat-blue">
+                                    <span class="stat-icon">☁</span>
+                                </div>
+                                <div class="stat-data">
+                                    <span class="stat-label">Cloud Cover</span>
+                                    <strong id="cloudCoverVal" class="stat-value">40%</strong>
+                                    <span class="stat-sub" id="cloudCoverDesc">Partly overcast</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-cell" id="statUV">
+                                <div class="stat-icon-wrap stat-amber">
+                                    <span class="stat-icon">☀</span>
+                                </div>
+                                <div class="stat-data">
+                                    <span class="stat-label">UV Index</span>
+                                    <strong id="uvIndexVal" class="stat-value">4.2</strong>
+                                    <span class="stat-sub" id="uvIndexDesc">Moderate risk</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-cell" id="statDewPoint">
+                                <div class="stat-icon-wrap stat-emerald">
+                                    <span class="stat-icon">🌡</span>
+                                </div>
+                                <div class="stat-data">
+                                    <span class="stat-label">Dew Point</span>
+                                    <strong id="dewPointVal" class="stat-value">12°</strong>
+                                    <span class="stat-sub" id="dewPointDesc">Comfortable air</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-cell" id="statSunriseMetric">
+                                <div class="stat-icon-wrap stat-amber">
+                                    <span class="stat-icon">☼</span>
+                                </div>
+                                <div class="stat-data">
+                                    <span class="stat-label">Sunrise</span>
+                                    <strong id="metricSunrise" class="stat-value">06:24 AM</strong>
+                                    <span class="stat-sub" id="metricSunriseDesc">Dawn horizon</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-cell" id="statSunsetMetric">
+                                <div class="stat-icon-wrap stat-purple">
+                                    <span class="stat-icon">◉</span>
+                                </div>
+                                <div class="stat-data">
+                                    <span class="stat-label">Sunset</span>
+                                    <strong id="metricSunset" class="stat-value">06:12 PM</strong>
+                                    <span class="stat-sub" id="metricSunsetDesc">Dusk transit</span>
                                 </div>
                             </div>
                         </div>
@@ -457,7 +562,7 @@
                                 </div>
                             </div>
 
-                            <!-- Synthetic Intelligence Grid -->
+                            <!-- Synthetic Intelligence Grid (Breakdown) -->
                             <div class="insights-grid">
                                 <div class="insight-tile">
                                     <div class="tile-header">
@@ -493,6 +598,75 @@
                                     </div>
                                     <strong id="insightCloudCover" class="tile-val">45%</strong>
                                     <small id="insightCloudDesc">Scattered cirrus/cumulus</small>
+                                </div>
+                            </div>
+
+                            <!-- WHAT'S IT GOOD FOR? (Activity Intelligence) -->
+                            <div class="activity-intelligence-block">
+                                <div class="subpanel-header">
+                                    <span class="subpanel-kicker">ACTIVITY SUITABILITY</span>
+                                    <h3 class="subpanel-title">WHAT'S IT GOOD FOR?</h3>
+                                </div>
+                                <div class="activities-grid" id="activitiesGrid">
+                                    <div class="activity-badge-card" id="actRunning">
+                                        <div class="act-header">
+                                            <span class="act-icon">🏃</span>
+                                            <span class="act-name">RUNNING</span>
+                                        </div>
+                                        <span class="act-status status-rec" id="actRunningStatus">Recommended</span>
+                                    </div>
+                                    <div class="activity-badge-card" id="actCycling">
+                                        <div class="act-header">
+                                            <span class="act-icon">🚴</span>
+                                            <span class="act-name">CYCLING</span>
+                                        </div>
+                                        <span class="act-status status-rec" id="actCyclingStatus">Recommended</span>
+                                    </div>
+                                    <div class="activity-badge-card" id="actWalking">
+                                        <div class="act-header">
+                                            <span class="act-icon">🚶</span>
+                                            <span class="act-name">WALKING</span>
+                                        </div>
+                                        <span class="act-status status-rec" id="actWalkingStatus">Recommended</span>
+                                    </div>
+                                    <div class="activity-badge-card" id="actPhotography">
+                                        <div class="act-header">
+                                            <span class="act-icon">📸</span>
+                                            <span class="act-name">PHOTOGRAPHY</span>
+                                        </div>
+                                        <span class="act-status status-rec" id="actPhotographyStatus">Recommended</span>
+                                    </div>
+                                    <div class="activity-badge-card" id="actTravel">
+                                        <div class="act-header">
+                                            <span class="act-icon">✈</span>
+                                            <span class="act-name">TRAVEL</span>
+                                        </div>
+                                        <span class="act-status status-rec" id="actTravelStatus">Recommended</span>
+                                    </div>
+                                    <div class="activity-badge-card" id="actEvents">
+                                        <div class="act-header">
+                                            <span class="act-icon">🎪</span>
+                                            <span class="act-name">OUTDOOR EVENTS</span>
+                                        </div>
+                                        <span class="act-status status-rec" id="actEventsStatus">Recommended</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AERIS OUTFIT ADVISOR (Clothing Recommendation) -->
+                            <div class="clothing-advisor-block" id="clothingAdvisorBlock">
+                                <div class="subpanel-header">
+                                    <span class="subpanel-kicker">WARDROBE TELEMETRY</span>
+                                    <h3 class="subpanel-title">AERIS OUTFIT ADVISOR</h3>
+                                </div>
+                                <div class="clothing-advisor-content">
+                                    <div class="clothing-icon-wrap" id="clothingIconWrap">
+                                        <span id="clothingIcon">🧥</span>
+                                    </div>
+                                    <div class="clothing-text-group">
+                                        <strong id="clothingPrimaryRec">Light jacket recommended.</strong>
+                                        <p id="clothingDetailRec">Thermal equilibrium optimal. Breathable layers suitable for diurnal temperature variation.</p>
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -743,6 +917,34 @@
                         <span class="badge" id="inspectorDateTag">LIVE SYNC</span>
                     </div>
 
+                    <!-- Daily Expanded Summary Bar (Requirement 14) -->
+                    <div class="inspector-summary-bar" id="inspectorSummaryBar">
+                        <div class="insp-stat-item">
+                            <span class="insp-stat-lbl">TEMP RANGE</span>
+                            <strong id="inspTempRange" class="insp-stat-val">--</strong>
+                        </div>
+                        <div class="insp-stat-item">
+                            <span class="insp-stat-lbl">MAX RAIN RISK</span>
+                            <strong id="inspMaxRain" class="insp-stat-val">--</strong>
+                        </div>
+                        <div class="insp-stat-item">
+                            <span class="insp-stat-lbl">AVG WIND</span>
+                            <strong id="inspAvgWind" class="insp-stat-val">--</strong>
+                        </div>
+                        <div class="insp-stat-item">
+                            <span class="insp-stat-lbl">AVG HUMIDITY</span>
+                            <strong id="inspAvgHumidity" class="insp-stat-val">--</strong>
+                        </div>
+                        <div class="insp-stat-item">
+                            <span class="insp-stat-lbl">PRESSURE</span>
+                            <strong id="inspPressure" class="insp-stat-val">--</strong>
+                        </div>
+                        <div class="insp-stat-item">
+                            <span class="insp-stat-lbl">CLOUD COVER</span>
+                            <strong id="inspCloudCover" class="insp-stat-val">--</strong>
+                        </div>
+                    </div>
+
                     <div class="inspector-slices-row" id="inspectorSlicesRow">
                         <!-- Populated dynamically -->
                     </div>
@@ -816,9 +1018,14 @@
                         <h2>Saved Meteorological Stations</h2>
                         <p class="section-subtitle">Persisted locally in LocalStorage. Rapidly switch stations or curate your orbital watch-list.</p>
                     </div>
-                    <button class="action-btn" id="saveCurrentCityDirectBtn">
-                        <span>+ Bookmark Active City</span>
-                    </button>
+                    <div class="saved-header-actions">
+                        <button class="action-btn" id="saveCurrentCityDirectBtn">
+                            <span>+ Bookmark Active City</span>
+                        </button>
+                        <button class="clear-recent-btn" id="clearAllSavedBtn">
+                            <span>Clear All Stations</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="saved-cities-grid" id="savedCitiesGrid">
@@ -867,6 +1074,19 @@
                                     <option value="default">Midnight Cyan (Default)</option>
                                     <option value="obsidian">Deep Obsidian (Ultra Dark)</option>
                                     <option value="cyberpunk">Cyberpunk Neon</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-meta">
+                                <strong>Clock Time Display Format</strong>
+                                <span>Choose standard 12-hour (AM/PM) or military 24-hour chronological display.</span>
+                            </div>
+                            <div class="setting-control">
+                                <select id="settingTimeFormatSelect" class="cyber-select">
+                                    <option value="24">24-Hour Format (18:42)</option>
+                                    <option value="12">12-Hour Format (06:42 PM)</option>
                                 </select>
                             </div>
                         </div>

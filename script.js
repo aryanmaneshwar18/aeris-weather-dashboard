@@ -29,8 +29,10 @@ const STATE = {
     currentWeather: null,
     forecastData: null,
     airQualityData: null,
+    uvData: null,
     activeCity: CONFIG.DEFAULT_CITY,
     unit: localStorage.getItem("aeris_unit") || "metric", // 'metric' (°C) or 'imperial' (°F)
+    timeFormat: localStorage.getItem("aeris_time_format") || "24", // '12' or '24'
     theme: localStorage.getItem("aeris_theme") || "default",
     animationsEnabled: localStorage.getItem("aeris_animations") !== "false",
     autoRefreshEnabled: localStorage.getItem("aeris_auto_refresh") !== "false",
@@ -47,6 +49,8 @@ const STATE = {
     activeMapLayer: "temp_new",
     autoRefreshTimer: null,
     clockTimer: null,
+    lastSyncTime: null,
+    appStatus: "IDLE", // 'IDLE', 'LOADING', 'SUCCESS', 'ERROR'
     isFetching: false
 };
 
@@ -81,11 +85,18 @@ const DOM = {
     savedCountBadge: document.getElementById("savedCountBadge"),
     gotoForecastViewBtn: document.getElementById("gotoForecastViewBtn"),
 
-    // AI Assistant & Robot
-    assistantSpeechBubble: document.getElementById("assistantSpeechBubble"),
+    // AERIS AI Avatar & Briefing
+    assistantSection: document.getElementById("assistantSection"),
+    assistantBriefingCard: document.getElementById("assistantBriefingCard"),
     assistantHeadline: document.getElementById("assistantHeadline"),
     assistantSpeechText: document.getElementById("assistantSpeechText"),
     assistantModeTag: document.getElementById("assistantModeTag"),
+    assistantTimestamp: document.getElementById("assistantTimestamp"),
+    briefingTempTrend: document.getElementById("briefingTempTrend"),
+    briefingRainRisk: document.getElementById("briefingRainRisk"),
+    briefingWindCond: document.getElementById("briefingWindCond"),
+    briefingComfort: document.getElementById("briefingComfort"),
+    briefingRecommendation: document.getElementById("briefingRecommendation"),
     robotAvatar: document.getElementById("robotAvatar"),
     robotAura: document.getElementById("robotAura"),
 
@@ -106,17 +117,29 @@ const DOM = {
     weatherIconContainer: document.getElementById("weatherIconContainer"),
     visualSkyTag: document.getElementById("visualSkyTag"),
 
-    // Secondary Telemetry Stats
+    // Secondary Telemetry Stats (10 Comprehensive Metrics)
     humidity: document.getElementById("humidity"),
-    humidityBar: document.getElementById("humidityBar"),
+    humidityDesc: document.getElementById("humidityDesc"),
     wind: document.getElementById("wind"),
+    windSpeedDesc: document.getElementById("windSpeedDesc"),
+    windDirectionVal: document.getElementById("windDirectionVal"),
     windDirectionText: document.getElementById("windDirectionText"),
     pressure: document.getElementById("pressure"),
     pressureClass: document.getElementById("pressureClass"),
     visibility: document.getElementById("visibility"),
     visibilityRating: document.getElementById("visibilityRating"),
+    cloudCoverVal: document.getElementById("cloudCoverVal"),
+    cloudCoverDesc: document.getElementById("cloudCoverDesc"),
+    uvIndexVal: document.getElementById("uvIndexVal"),
+    uvIndexDesc: document.getElementById("uvIndexDesc"),
+    dewPointVal: document.getElementById("dewPointVal"),
+    dewPointDesc: document.getElementById("dewPointDesc"),
+    metricSunrise: document.getElementById("metricSunrise"),
+    metricSunriseDesc: document.getElementById("metricSunriseDesc"),
+    metricSunset: document.getElementById("metricSunset"),
+    metricSunsetDesc: document.getElementById("metricSunsetDesc"),
 
-    // Computed Insights
+    // Computed Insights & Outdoor Score
     outdoorScoreVal: document.getElementById("outdoorScoreVal"),
     outdoorScoreBadge: document.getElementById("outdoorScoreBadge"),
     outdoorScoreAdvice: document.getElementById("outdoorScoreAdvice"),
@@ -129,6 +152,19 @@ const DOM = {
     insightWindDesc: document.getElementById("insightWindDesc"),
     insightCloudCover: document.getElementById("insightCloudCover"),
     insightCloudDesc: document.getElementById("insightCloudDesc"),
+
+    // Activity Intelligence (What's It Good For?)
+    actRunningStatus: document.getElementById("actRunningStatus"),
+    actCyclingStatus: document.getElementById("actCyclingStatus"),
+    actWalkingStatus: document.getElementById("actWalkingStatus"),
+    actPhotographyStatus: document.getElementById("actPhotographyStatus"),
+    actTravelStatus: document.getElementById("actTravelStatus"),
+    actEventsStatus: document.getElementById("actEventsStatus"),
+
+    // Outfit Advisor
+    clothingIcon: document.getElementById("clothingIcon"),
+    clothingPrimaryRec: document.getElementById("clothingPrimaryRec"),
+    clothingDetailRec: document.getElementById("clothingDetailRec"),
 
     // Air Quality
     aqiPanel: document.getElementById("aqiPanel"),
@@ -157,16 +193,23 @@ const DOM = {
     windGustVal: document.getElementById("windGustVal"),
     beaufortVal: document.getElementById("beaufortVal"),
 
-    // Forecast Lists
+    // Forecast Lists & Detailed Inspector
     homeForecastList: document.getElementById("homeForecastList"),
     forecastViewCity: document.getElementById("forecastViewCity"),
     forecastExtendedGrid: document.getElementById("forecastExtendedGrid"),
     inspectorDayTitle: document.getElementById("inspectorDayTitle"),
     inspectorSlicesRow: document.getElementById("inspectorSlicesRow"),
+    inspTempRange: document.getElementById("inspTempRange"),
+    inspMaxRain: document.getElementById("inspMaxRain"),
+    inspAvgWind: document.getElementById("inspAvgWind"),
+    inspAvgHumidity: document.getElementById("inspAvgHumidity"),
+    inspPressure: document.getElementById("inspPressure"),
+    inspCloudCover: document.getElementById("inspCloudCover"),
 
     // Saved & Recent
     savedCitiesGrid: document.getElementById("savedCitiesGrid"),
     saveCurrentCityDirectBtn: document.getElementById("saveCurrentCityDirectBtn"),
+    clearAllSavedBtn: document.getElementById("clearAllSavedBtn"),
     recentCitiesContainer: document.getElementById("recentCities"),
     clearRecent: document.getElementById("clearRecent"),
 
@@ -181,6 +224,7 @@ const DOM = {
 
     // Settings
     settingUnitSelect: document.getElementById("settingUnitSelect"),
+    settingTimeFormatSelect: document.getElementById("settingTimeFormatSelect"),
     settingThemeSelect: document.getElementById("settingThemeSelect"),
     settingAnimToggle: document.getElementById("settingAnimToggle"),
     settingAutoRefreshToggle: document.getElementById("settingAutoRefreshToggle"),
@@ -198,7 +242,10 @@ const DOM = {
     errorBox: document.getElementById("errorBox"),
     errorTitle: document.getElementById("errorTitle"),
     errorMessage: document.getElementById("errorMessage"),
+    retryFetchBtn: document.getElementById("retryFetchBtn"),
     closeError: document.getElementById("closeError"),
+    offlineBanner: document.getElementById("offlineBanner"),
+    offlineTimestamp: document.getElementById("offlineTimestamp"),
     loading: document.getElementById("loading"),
     loadingStatusMessage: document.getElementById("loadingStatusMessage"),
     toastContainer: document.getElementById("toastContainer"),
@@ -418,16 +465,34 @@ async function fetchAPI(url) {
 
 /**
  * Main Orchestration Function: Fetches all telemetry layers concurrently
+ * State Machine: IDLE -> LOADING -> SUCCESS / ERROR (with Offline Cache fallback)
  */
 async function executeWeatherTelemetry(cityQuery, coords = null) {
     const activeKey = getActiveApiKey();
     if (!activeKey || activeKey === "YOUR_OPENWEATHER_API_KEY") {
+        setAppState("ERROR");
         showError("API Key Missing", "Please supply an OpenWeather API Key in settings or script.js CONFIG.");
         return;
     }
 
+    setAppState("LOADING");
     showLoading(`Analyzing atmosphere for ${cityQuery || "coordinates"}...`);
     hideError();
+
+    // Check if offline
+    if (!navigator.onLine) {
+        const cached = loadCachedTelemetry();
+        if (cached) {
+            applyCachedData(cached, "Network Offline");
+            hideLoading();
+            return;
+        } else {
+            setAppState("ERROR");
+            hideLoading();
+            showError("Offline Mode", "No network connection and no cached weather data available.");
+            return;
+        }
+    }
 
     try {
         let weatherUrl;
@@ -453,19 +518,38 @@ async function executeWeatherTelemetry(cityQuery, coords = null) {
         STATE.currentWeather = weatherData;
         STATE.forecastData = forecastData;
         STATE.activeCity = weatherData.name;
+        STATE.lastSyncTime = Date.now();
 
-        // Try fetching Air Quality using coordinates from weatherData
+        // Fetch Air Quality & UV Index using coordinates
         if (weatherData.coord) {
+            const lat = weatherData.coord.lat;
+            const lon = weatherData.coord.lon;
+
             try {
-                const aqiUrl = `${CONFIG.ENDPOINTS.AIR_POLLUTION}?lat=${weatherData.coord.lat}&lon=${weatherData.coord.lon}&appid=${activeKey}`;
+                const aqiUrl = `${CONFIG.ENDPOINTS.AIR_POLLUTION}?lat=${lat}&lon=${lon}&appid=${activeKey}`;
                 STATE.airQualityData = await fetchAPI(aqiUrl);
             } catch (aqiErr) {
                 console.warn("Air Quality unavailable for this region:", aqiErr);
                 STATE.airQualityData = null;
             }
+
+            try {
+                const uvUrl = `https://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${activeKey}`;
+                STATE.uvData = await fetchAPI(uvUrl);
+            } catch (uvErr) {
+                console.warn("UV index endpoint warning:", uvErr);
+                STATE.uvData = null;
+            }
         }
 
+        // Cache successful response to LocalStorage
+        saveTelemetryToCache();
+
+        // Hide offline banner if previously shown
+        hideOfflineBanner();
+
         // Render all UI components
+        setAppState("SUCCESS");
         renderAllTelemetry();
 
         // Update registries
@@ -476,9 +560,82 @@ async function executeWeatherTelemetry(cityQuery, coords = null) {
 
     } catch (error) {
         console.error("Telemetry fetch error:", error);
-        handleFetchErrors(error, cityQuery);
+        
+        // Attempt offline cache recovery if available
+        const cached = loadCachedTelemetry();
+        if (cached && (error.message === "OFFLINE_NETWORK" || !navigator.onLine)) {
+            applyCachedData(cached, "Network Interruption");
+        } else {
+            setAppState("ERROR");
+            handleFetchErrors(error, cityQuery);
+        }
     } finally {
         hideLoading();
+    }
+}
+
+function setAppState(status) {
+    STATE.appStatus = status;
+    const telemetryStatusEl = document.getElementById("telemetryStatus");
+    if (telemetryStatusEl) {
+        if (status === "LOADING") telemetryStatusEl.textContent = "SYNCHRONIZING...";
+        else if (status === "SUCCESS") telemetryStatusEl.textContent = "ORBITAL SYNCHRONIZED";
+        else if (status === "ERROR") telemetryStatusEl.textContent = "TELEMETRY ANOMALY";
+        else telemetryStatusEl.textContent = "SYSTEM STANDBY";
+    }
+}
+
+function saveTelemetryToCache() {
+    try {
+        const payload = {
+            currentWeather: STATE.currentWeather,
+            forecastData: STATE.forecastData,
+            airQualityData: STATE.airQualityData,
+            uvData: STATE.uvData,
+            timestamp: STATE.lastSyncTime,
+            unit: STATE.unit
+        };
+        localStorage.setItem("aeris_last_cache", JSON.stringify(payload));
+    } catch (e) {
+        console.warn("Cache save error:", e);
+    }
+}
+
+function loadCachedTelemetry() {
+    try {
+        const raw = localStorage.getItem("aeris_last_cache");
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function applyCachedData(cached, reason = "Offline") {
+    STATE.currentWeather = cached.currentWeather;
+    STATE.forecastData = cached.forecastData;
+    STATE.airQualityData = cached.airQualityData;
+    STATE.uvData = cached.uvData;
+    STATE.activeCity = cached.currentWeather?.name || STATE.activeCity;
+    STATE.lastSyncTime = cached.timestamp;
+
+    setAppState("SUCCESS");
+    renderAllTelemetry();
+
+    const minsAgo = Math.max(1, Math.round((Date.now() - (cached.timestamp || Date.now())) / 60000));
+    showOfflineBanner(`Offline Mode (${reason}) — Telemetry synced ${minsAgo} min ago`);
+    showToast(`Displaying cached telemetry for ${STATE.activeCity}`, "info");
+}
+
+function showOfflineBanner(text) {
+    if (DOM.offlineBanner) {
+        DOM.offlineBanner.classList.remove("hidden");
+        if (DOM.offlineTimestamp) DOM.offlineTimestamp.textContent = text;
+    }
+}
+
+function hideOfflineBanner() {
+    if (DOM.offlineBanner) {
+        DOM.offlineBanner.classList.add("hidden");
     }
 }
 
@@ -584,86 +741,204 @@ function renderWeatherVisualSphere(condition, iconCode) {
 /**
  * 2. AI Weather Assistant Reaction Engine
  */
+/**
+ * 2. AERIS AI Weather Briefing & Reaction Engine (Requirements 5 & 6)
+ */
 function renderAIAssistant() {
     const weather = STATE.currentWeather;
     if (!weather) return;
 
     const condition = weather.weather[0].main;
-    const temp = weather.main.temp;
-    const isNight = weather.weather[0].icon.endsWith("n");
+    const desc = weather.weather[0].description;
+    const temp = Math.round(weather.main.temp);
+    const feelsLike = Math.round(weather.main.feels_like);
+    const humidity = weather.main.humidity;
+    const windSpeed = weather.wind.speed;
+    const windDir = getWindDirectionCompass(weather.wind.deg);
+    const unitSymbol = STATE.unit === "metric" ? "°C" : "°F";
+    const tempC = STATE.unit === "metric" ? weather.main.temp : (weather.main.temp - 32) * (5 / 9);
 
+    // Dynamic Natural Language Briefing Generation (Not hard-coded)
     let headline = "Atmospheric Synchrony Established";
-    let message = "Conditions are nominal across local troposphere.";
+    let summary = "";
     let robotClass = "state-clear";
+    let avatarStateTag = "STABLE";
 
-    if (condition === "Clear") {
-        headline = isNight ? "Clear Nocturnal Sky" : "Optimal Clear Conditions";
-        message = isNight
-            ? "Unobstructed nocturnal sky detected. Optimal atmospheric visibility for celestial tracking."
-            : "Conditions look excellent today. Thermal balance is favorable — perfect time to be outside.";
-        robotClass = "state-clear";
-    } else if (condition === "Rain" || condition === "Drizzle") {
-        headline = "Precipitation Detected";
-        message = "Precipitation detected in your area. Surface friction reduced; carry rain protection.";
-        robotClass = "state-rain";
-    } else if (condition === "Thunderstorm") {
-        headline = "Severe Storm Alert";
-        message = "Active convective storm cell detected. High electrical discharge potential; outdoor plans should be reconsidered.";
-        robotClass = "state-storm";
-    } else if (condition === "Snow") {
-        headline = "Cryosphere Deposition";
-        message = "Sub-freezing crystalline precipitation falling. Thermal insulation recommended.";
-        robotClass = "state-cold";
-    } else if (temp > 35 && STATE.unit === "metric" || temp > 95 && STATE.unit === "imperial") {
-        headline = "Extreme Thermal Advisory";
-        message = "High temperatures detected. Stay hydrated and limit prolonged direct ultraviolet exposure.";
-        robotClass = "state-storm";
-    } else if (temp < 5 && STATE.unit === "metric" || temp < 41 && STATE.unit === "imperial") {
-        headline = "Hypothermic Vector Warning";
-        message = "Temperatures are dropping significantly. Consider an additional thermal layer before heading out.";
-        robotClass = "state-cold";
+    // Dynamic temperature trend calculation from forecast
+    let tempTrend = "Steady";
+    let popMax = 0;
+    if (STATE.forecastData && STATE.forecastData.list && STATE.forecastData.list.length > 2) {
+        const nextTemp = STATE.forecastData.list[1].main.temp;
+        const diff = nextTemp - weather.main.temp;
+        if (diff > 1.5) tempTrend = "Warming (+)";
+        else if (diff < -1.5) tempTrend = "Cooling (-)";
+        else tempTrend = "Steady (~0°)";
+
+        popMax = Math.round(Math.max(...STATE.forecastData.list.slice(0, 4).map(s => s.pop || 0)) * 100);
     }
 
-    DOM.assistantHeadline.textContent = headline;
-    DOM.assistantSpeechText.innerHTML = message;
-    DOM.assistantModeTag.textContent = condition.toUpperCase();
+    // Determine state & narrative
+    if (condition === "Thunderstorm") {
+        headline = "Severe Convective Warning";
+        summary = `${weather.name} is reporting intense storm activity at ${temp}${unitSymbol} with active electrical turbulence and gusts from ${windDir}. Cease outdoor operations immediately.`;
+        robotClass = "state-storm";
+        avatarStateTag = "CRITICAL";
+    } else if (condition === "Rain" || condition === "Drizzle") {
+        headline = "Precipitation Vector Active";
+        summary = `${weather.name} is currently ${temp}${unitSymbol} with active ${desc} and ${humidity}% relative humidity. Winds are ${windSpeed} ${STATE.unit === "metric" ? "m/s" : "mph"} from ${windDir}. Wet ground conditions present; carry waterproof outer shell.`;
+        robotClass = "state-rain";
+        avatarStateTag = "WARNING";
+    } else if (condition === "Snow") {
+        headline = "Cryospheric Precipitation";
+        summary = `${weather.name} is experiencing freezing conditions at ${temp}${unitSymbol} with sub-zero crystallisation. Surface friction reduced; thermal insulation and traction footwear advised.`;
+        robotClass = "state-cold";
+        avatarStateTag = "WARNING";
+    } else if (tempC > 35) {
+        headline = "Extreme Thermal Advisory";
+        summary = `${weather.name} is experiencing elevated heat at ${temp}${unitSymbol} (feels like ${feelsLike}${unitSymbol}). Ambient humidity is ${humidity}%. Limit direct ultraviolet exposure and prioritize cellular hydration.`;
+        robotClass = "state-storm";
+        avatarStateTag = "WARNING";
+    } else if (tempC < 4) {
+        headline = "Sub-Tropospheric Freeze";
+        summary = `${weather.name} is cold at ${temp}${unitSymbol} with wind chill indexing down to ${feelsLike}${unitSymbol}. Multi-layer thermal insulation strongly recommended for all excursions.`;
+        robotClass = "state-cold";
+        avatarStateTag = "WARNING";
+    } else if (condition === "Clouds") {
+        headline = "Moderate Stratocumulus Deck";
+        summary = `${weather.name} is currently ${temp}${unitSymbol} (feels like ${feelsLike}${unitSymbol}) with ${desc}. Winds are gentle at ${windSpeed} ${STATE.unit === "metric" ? "m/s" : "mph"} from ${windDir}. Outdoor parameters are favorable with soft ambient lighting.`;
+        robotClass = "state-clear";
+        avatarStateTag = "STABLE";
+    } else {
+        headline = "Optimal Atmospheric Clarity";
+        summary = `${weather.name} is currently ${temp}${unitSymbol} with pristine sky visibility and balanced ${humidity}% humidity. Wind vectors are light at ${windSpeed} ${STATE.unit === "metric" ? "m/s" : "mph"}. Thermal comfort index is at peak levels.`;
+        robotClass = "state-clear";
+        avatarStateTag = "STABLE";
+    }
 
-    // Update Robot Visual Avatar State
-    DOM.robotAvatar.className = `robot ${robotClass}`;
+    if (DOM.assistantHeadline) DOM.assistantHeadline.textContent = headline;
+    if (DOM.assistantSpeechText) DOM.assistantSpeechText.textContent = summary;
+    if (DOM.assistantModeTag) DOM.assistantModeTag.textContent = avatarStateTag;
+    if (DOM.robotAvatar) DOM.robotAvatar.className = `robot ${robotClass}`;
+
+    // Dynamic Briefing Diagnostic Chips
+    if (DOM.briefingTempTrend) DOM.briefingTempTrend.textContent = tempTrend;
+    if (DOM.briefingRainRisk) {
+        const rainRiskLabel = popMax > 50 ? `High (${popMax}%)` : (popMax > 20 ? `Moderate (${popMax}%)` : "Low (<10%)");
+        DOM.briefingRainRisk.textContent = rainRiskLabel;
+    }
+    if (DOM.briefingWindCond) {
+        DOM.briefingWindCond.textContent = windSpeed > 10 ? "Gale Force" : (windSpeed > 5 ? "Breezy" : "Gentle");
+    }
+    if (DOM.briefingComfort) {
+        let comfort = "Favorable";
+        if (tempC > 30 || tempC < 5) comfort = "Harsh";
+        else if (humidity > 75) comfort = "Muggy";
+        DOM.briefingComfort.textContent = comfort;
+    }
+    if (DOM.briefingRecommendation) {
+        let rec = "Ideal for outdoors";
+        if (condition === "Thunderstorm" || condition === "Rain") rec = "Carry umbrella";
+        else if (tempC < 10) rec = "Wear jacket";
+        else if (tempC > 32) rec = "Seek shade";
+        DOM.briefingRecommendation.textContent = rec;
+    }
+    if (DOM.assistantTimestamp) {
+        DOM.assistantTimestamp.textContent = "SYNCHRONIZED LIVE";
+    }
 }
 
 /**
- * 3. Secondary Telemetry Stats
+ * 3. Secondary Telemetry Stats (All 10 Comprehensive Metrics - Requirements 7 & 8)
  */
 function renderSecondaryStats() {
-    const { main, wind: windData, visibility: visData } = STATE.currentWeather;
+    const { main, wind: windData, visibility: visData, clouds, sys, coord } = STATE.currentWeather;
+    const tempC = STATE.unit === "metric" ? main.temp : (main.temp - 32) * (5 / 9);
 
-    // Humidity
+    // 1. Humidity
     DOM.humidity.textContent = `${main.humidity}%`;
-    DOM.humidityBar.style.width = `${Math.min(main.humidity, 100)}%`;
+    let humDesc = "Moderate moisture";
+    if (main.humidity < 30) humDesc = "Dry ambient air";
+    else if (main.humidity > 70) humDesc = "High air saturation";
+    if (DOM.humidityDesc) DOM.humidityDesc.textContent = humDesc;
 
-    // Wind
+    // 2. Wind Speed
     DOM.wind.textContent = `${windData.speed} ${STATE.unit === "metric" ? "m/s" : "mph"}`;
-    DOM.windDirectionText.textContent = `${getWindDirectionCompass(windData.deg)} (${windData.deg || 0}°)`;
+    if (DOM.windSpeedDesc) DOM.windSpeedDesc.textContent = getBeaufortDescription(windData.speed);
 
-    // Pressure
+    // 3. Wind Direction
+    const compassDir = getWindDirectionCompass(windData.deg);
+    if (DOM.windDirectionVal) DOM.windDirectionVal.textContent = `${windData.deg || 0}° ${compassDir}`;
+    if (DOM.windDirectionText) DOM.windDirectionText.textContent = `${compassDir} air vector`;
+
+    // 4. Pressure
     DOM.pressure.textContent = `${main.pressure} hPa`;
     let pClass = "Standard (Stable)";
-    if (main.pressure < 1005) pClass = "Low Pressure (Storm Front)";
-    else if (main.pressure > 1025) pClass = "High Pressure (Clear Sky)";
+    if (main.pressure < 1005) pClass = "Low Front (Unstable)";
+    else if (main.pressure > 1025) pClass = "High Pressure (Calm)";
     DOM.pressureClass.textContent = pClass;
 
-    // Visibility
+    // 5. Visibility
     const visKm = (visData / 1000).toFixed(1);
     DOM.visibility.textContent = `${visKm} km`;
     let visRate = "Optimal Sight";
     if (visKm < 2) visRate = "Dense Fog / Hazard";
     else if (visKm < 6) visRate = "Moderate Haze";
     DOM.visibilityRating.textContent = visRate;
+
+    // 6. Cloud Cover
+    if (DOM.cloudCoverVal) DOM.cloudCoverVal.textContent = `${clouds?.all ?? 0}%`;
+    let cloudDesc = "Clear horizon";
+    if (clouds?.all > 80) cloudDesc = "Dense overcast";
+    else if (clouds?.all > 40) cloudDesc = "Scattered cumulus";
+    if (DOM.cloudCoverDesc) DOM.cloudCoverDesc.textContent = cloudDesc;
+
+    // 7. UV Index (from uvData or estimated by sun height)
+    let uvVal = "--";
+    let uvInterp = "Low exposure";
+    if (STATE.uvData && STATE.uvData.value !== undefined) {
+        uvVal = STATE.uvData.value.toFixed(1);
+        if (STATE.uvData.value > 8) uvInterp = "Very High risk";
+        else if (STATE.uvData.value > 5) uvInterp = "Moderate risk";
+        else if (STATE.uvData.value > 2) uvInterp = "Low-Moderate risk";
+    } else {
+        // Fallback estimate based on time of day and clouds
+        const nowSec = Math.floor(Date.now() / 1000);
+        if (nowSec >= sys.sunrise && nowSec <= sys.sunset) {
+            const solarProg = (nowSec - sys.sunrise) / Math.max(1, (sys.sunset - sys.sunrise));
+            const baseUv = Math.sin(solarProg * Math.PI) * 7;
+            const finalUv = Math.max(0.5, (baseUv * (1 - (clouds?.all || 0) / 200))).toFixed(1);
+            uvVal = finalUv;
+            uvInterp = finalUv > 5 ? "Moderate risk" : "Low risk";
+        } else {
+            uvVal = "0.0";
+            uvInterp = "No solar radiance (Night)";
+        }
+    }
+    if (DOM.uvIndexVal) DOM.uvIndexVal.textContent = uvVal;
+    if (DOM.uvIndexDesc) DOM.uvIndexDesc.textContent = uvInterp;
+
+    // 8. Dew Point (Magnus-Tetens formula: Tdew = T - ((100 - RH) / 5))
+    const dewPointCalc = Math.round(tempC - ((100 - main.humidity) / 5));
+    const dewPointDisplay = STATE.unit === "metric" ? dewPointCalc : Math.round(dewPointCalc * 1.8 + 32);
+    if (DOM.dewPointVal) DOM.dewPointVal.textContent = `${dewPointDisplay}°`;
+    let dewDesc = "Comfortable air";
+    if (dewPointCalc > 20) dewDesc = "Muggy & humid";
+    else if (dewPointCalc < 5) dewDesc = "Dry & crisp";
+    if (DOM.dewPointDesc) DOM.dewPointDesc.textContent = dewDesc;
+
+    // 9. Sunrise
+    const sunriseStr = formatUTCTimestamp(sys.sunrise, STATE.currentWeather.timezone);
+    if (DOM.metricSunrise) DOM.metricSunrise.textContent = sunriseStr;
+    if (DOM.metricSunriseDesc) DOM.metricSunriseDesc.textContent = "Dawn horizon";
+
+    // 10. Sunset
+    const sunsetStr = formatUTCTimestamp(sys.sunset, STATE.currentWeather.timezone);
+    if (DOM.metricSunset) DOM.metricSunset.textContent = sunsetStr;
+    if (DOM.metricSunsetDesc) DOM.metricSunsetDesc.textContent = "Dusk horizon";
 }
 
 /**
- * 4. Rule-Based Atmospheric Insights Calculation Engine
+ * 4. Rule-Based Atmospheric Insights, Outdoor Score, Activity Intelligence & Outfit Advisor
  */
 function renderAtmosphericInsights() {
     const { main, weather, wind, visibility, clouds } = STATE.currentWeather;
@@ -678,6 +953,7 @@ function renderAtmosphericInsights() {
     if (visibility < 5000) score -= 15;
     if (weather[0].main === "Rain") score -= 35;
     if (weather[0].main === "Thunderstorm") score -= 60;
+    if (weather[0].main === "Snow") score -= 40;
     score = Math.max(10, Math.min(100, Math.round(score)));
 
     DOM.outdoorScoreVal.textContent = score;
@@ -688,19 +964,25 @@ function renderAtmosphericInsights() {
 
     let badge = "EXCELLENT";
     let advice = "Optimal conditions for outdoor activities, sports, or travel.";
-    if (score < 40) {
+    if (score < 25) {
+        badge = "SEVERE";
+        advice = "Extreme atmospheric turbulence. Outdoor exertion strongly discouraged.";
+    } else if (score < 50) {
         badge = "POOR";
         advice = "Adverse weather factors detected. Indoor shelter recommended.";
-    } else if (score < 70) {
+    } else if (score < 75) {
         badge = "MODERATE";
         advice = "Acceptable conditions. Exercise caution with changing fronts.";
+    } else if (score < 90) {
+        badge = "GOOD";
+        advice = "Favorable weather for exercise, walking, and outdoor tasks.";
     }
     DOM.outdoorScoreBadge.textContent = badge;
     DOM.outdoorScoreAdvice.textContent = advice;
 
     // Comfort
     let comfort = "Comfortable";
-    let comfortDesc = "Mild ambient temperature";
+    let comfortDesc = "Mild ambient moisture";
     if (tempC > 30 && main.humidity > 60) {
         comfort = "Muggy & Sultry";
         comfortDesc = "High heat index";
@@ -731,7 +1013,140 @@ function renderAtmosphericInsights() {
     // Cloud Veil
     DOM.insightCloudCover.textContent = `${clouds.all}%`;
     DOM.insightCloudDesc.textContent = clouds.all > 80 ? "Dense stratocumulus" : "Scattered cirrus veil";
+
+    // Activity Intelligence (Requirements 10)
+    renderActivityIntelligence(tempC, weather[0].main, wind.speed, main.humidity, visibility);
+
+    // Outfit Advisor (Requirements 11)
+    renderClothingAdvisor(tempC, weather[0].main, wind.speed);
 }
+
+function renderActivityIntelligence(tempC, condition, windSpeed, humidity, visibility) {
+    const isRain = condition === "Rain" || condition === "Drizzle" || condition === "Thunderstorm";
+
+    // 1. Running
+    let runningStatus = "Recommended";
+    let runningClass = "status-rec";
+    if (condition === "Thunderstorm" || tempC > 34 || tempC < 0) {
+        runningStatus = "Not Recommended";
+        runningClass = "status-not-rec";
+    } else if (isRain || tempC > 28 || windSpeed > 8) {
+        runningStatus = "Caution";
+        runningClass = "status-caution";
+    }
+    updateActivityBadge(DOM.actRunningStatus, runningStatus, runningClass);
+
+    // 2. Cycling
+    let cyclingStatus = "Recommended";
+    let cyclingClass = "status-rec";
+    if (isRain || windSpeed > 10 || visibility < 3000) {
+        cyclingStatus = "Not Recommended";
+        cyclingClass = "status-not-rec";
+    } else if (windSpeed > 6 || tempC < 5) {
+        cyclingStatus = "Caution";
+        cyclingClass = "status-caution";
+    }
+    updateActivityBadge(DOM.actCyclingStatus, cyclingStatus, cyclingClass);
+
+    // 3. Walking
+    let walkingStatus = "Recommended";
+    let walkingClass = "status-rec";
+    if (condition === "Thunderstorm" || tempC < -5) {
+        walkingStatus = "Not Recommended";
+        walkingClass = "status-not-rec";
+    } else if (isRain || tempC > 33) {
+        walkingStatus = "Caution";
+        walkingClass = "status-caution";
+    }
+    updateActivityBadge(DOM.actWalkingStatus, walkingStatus, walkingClass);
+
+    // 4. Photography
+    let photoStatus = "Recommended";
+    let photoClass = "status-rec";
+    if (condition === "Thunderstorm" || visibility < 2000) {
+        photoStatus = "Not Recommended";
+        photoClass = "status-not-rec";
+    } else if (isRain) {
+        photoStatus = "Caution";
+        photoClass = "status-caution";
+    }
+    updateActivityBadge(DOM.actPhotographyStatus, photoStatus, photoClass);
+
+    // 5. Travel
+    let travelStatus = "Recommended";
+    let travelClass = "status-rec";
+    if (condition === "Thunderstorm" || visibility < 1500) {
+        travelStatus = "Not Recommended";
+        travelClass = "status-not-rec";
+    } else if (isRain || windSpeed > 12) {
+        travelStatus = "Caution";
+        travelClass = "status-caution";
+    }
+    updateActivityBadge(DOM.actTravelStatus, travelStatus, travelClass);
+
+    // 6. Outdoor Events
+    let eventsStatus = "Recommended";
+    let eventsClass = "status-rec";
+    if (isRain || windSpeed > 9 || tempC > 36 || tempC < 3) {
+        eventsStatus = "Not Recommended";
+        eventsClass = "status-not-rec";
+    } else if (tempC > 30 || windSpeed > 6) {
+        eventsStatus = "Caution";
+        eventsClass = "status-caution";
+    }
+    updateActivityBadge(DOM.actEventsStatus, eventsStatus, eventsClass);
+}
+
+function updateActivityBadge(el, text, className) {
+    if (!el) return;
+    el.textContent = text;
+    el.className = `act-status ${className}`;
+}
+
+function renderClothingAdvisor(tempC, condition, windSpeed) {
+    if (!DOM.clothingPrimaryRec) return;
+
+    let icon = "👕";
+    let primary = "T-Shirt & Shorts recommended.";
+    let detail = "Warm thermal conditions. Light, breathable fabrics suitable for maximum airflow.";
+
+    const isRain = condition === "Rain" || condition === "Drizzle" || condition === "Thunderstorm";
+
+    if (tempC < 4) {
+        icon = "🧥";
+        primary = "Heavy Winter Coat & Thermals.";
+        detail = "Sub-freezing air layer. Insulated parka, scarf, and thermal undergarments advised.";
+    } else if (tempC < 14) {
+        icon = "🧥";
+        primary = "Jacket or sweater recommended.";
+        detail = "Crisp air with active wind chill. Mid-weight fleece, knitwear, or windbreaker suitable.";
+    } else if (tempC < 20) {
+        icon = "🧥";
+        primary = "Light jacket or hoodie recommended.";
+        detail = "Mild ambient temperatures. Flexible layered clothing accommodates diurnal swings.";
+    } else if (tempC < 26) {
+        icon = "👕";
+        primary = "Shirt or T-shirt recommended.";
+        detail = "Comfortable thermal zone. Standard casual cotton or linen fabrics ideal.";
+    } else {
+        icon = "🎽";
+        primary = "Light, breathable clothing.";
+        detail = "Elevated ambient heat. Loose UV-protective garments and sunglasses advised.";
+    }
+
+    if (isRain) {
+        icon = "☂";
+        primary += " Rain jacket / Umbrella needed.";
+        detail += " Active precipitation requires waterproof outer shell and water-resistant footwear.";
+    } else if (windSpeed > 8) {
+        primary += " Windbreaker recommended.";
+    }
+
+    if (DOM.clothingIcon) DOM.clothingIcon.textContent = icon;
+    DOM.clothingPrimaryRec.textContent = primary;
+    if (DOM.clothingDetailRec) DOM.clothingDetailRec.textContent = detail;
+}
+
 
 /**
  * 5. Air Quality Telemetry & Pollutant Sensors
@@ -938,12 +1353,36 @@ function inspectForecastDay(dayIndex) {
     DOM.inspectorDayTitle.textContent = `${day.dayName} (${day.dateFormatted}) — 3-Hour Synoptic Micro-Slices`;
     DOM.inspectorSlicesRow.innerHTML = "";
 
+    // Calculate aggregated daily analytics (Requirement 14)
+    if (day.rawSlices && day.rawSlices.length > 0) {
+        const slices = day.rawSlices;
+        const maxPop = Math.round(Math.max(...slices.map(s => s.pop || 0)) * 100);
+        const avgWind = (slices.reduce((acc, s) => acc + (s.wind?.speed || 0), 0) / slices.length).toFixed(1);
+        const avgHum = Math.round(slices.reduce((acc, s) => acc + (s.main?.humidity || 0), 0) / slices.length);
+        const avgPressure = Math.round(slices.reduce((acc, s) => acc + (s.main?.pressure || 0), 0) / slices.length);
+        const avgClouds = Math.round(slices.reduce((acc, s) => acc + (s.clouds?.all || 0), 0) / slices.length);
+
+        if (DOM.inspTempRange) DOM.inspTempRange.textContent = `${day.minTemp}° / ${day.maxTemp}°`;
+        if (DOM.inspMaxRain) DOM.inspMaxRain.textContent = `${maxPop}%`;
+        if (DOM.inspAvgWind) DOM.inspAvgWind.textContent = `${avgWind} ${STATE.unit === "metric" ? "m/s" : "mph"}`;
+        if (DOM.inspAvgHumidity) DOM.inspAvgHumidity.textContent = `${avgHum}%`;
+        if (DOM.inspPressure) DOM.inspPressure.textContent = `${avgPressure} hPa`;
+        if (DOM.inspCloudCover) DOM.inspCloudCover.textContent = `${avgClouds}%`;
+    }
+
     day.rawSlices.forEach(slice => {
-        const time = new Date(slice.dt * 1000).toLocaleTimeString("en-US", { hour: "numeric", hour12: true });
+        const date = new Date(slice.dt * 1000);
+        let timeStr = "";
+        if (STATE.timeFormat === "12") {
+            timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", hour12: true });
+        } else {
+            timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+        }
+
         const sliceCard = document.createElement("div");
         sliceCard.className = "slice-card";
         sliceCard.innerHTML = `
-            <span class="slice-time">${time}</span>
+            <span class="slice-time">${timeStr}</span>
             <div class="slice-icon">${getWeatherEmoji(slice.weather[0].main, slice.weather[0].icon)}</div>
             <strong class="slice-temp">${Math.round(slice.main.temp)}°</strong>
             <span class="slice-pop">☂ ${Math.round((slice.pop || 0) * 100)}%</span>
@@ -1635,6 +2074,19 @@ function initSettings() {
         });
     }
 
+    // Time format select
+    if (DOM.settingTimeFormatSelect) {
+        DOM.settingTimeFormatSelect.value = STATE.timeFormat;
+        DOM.settingTimeFormatSelect.addEventListener("change", (e) => {
+            STATE.timeFormat = e.target.value;
+            localStorage.setItem("aeris_time_format", STATE.timeFormat);
+            showToast(`Time format set to ${STATE.timeFormat}-Hour`, "info");
+            if (STATE.currentWeather) {
+                renderAllTelemetry();
+            }
+        });
+    }
+
     // Flush Local Storage
     DOM.btnFlushLocalStorage?.addEventListener("click", () => {
         if (confirm("Reset all saved cities, settings, and telemetry cache?")) {
@@ -1658,6 +2110,35 @@ function initSettings() {
             localStorage.removeItem("aeris_api_key_override");
             showToast("Reset to default configuration key.", "info");
         }
+    });
+
+    // Retry fetch button in errorBox
+    DOM.retryFetchBtn?.addEventListener("click", () => {
+        hideError();
+        executeWeatherTelemetry(STATE.activeCity);
+    });
+
+    // Clear all saved cities
+    DOM.clearAllSavedBtn?.addEventListener("click", () => {
+        if (STATE.savedCities.length === 0) return;
+        if (confirm("Remove all saved meteorological stations from repository?")) {
+            STATE.savedCities = [];
+            localStorage.setItem("aeris_saved_cities", JSON.stringify([]));
+            updateSaveCityButtonState();
+            renderSavedCities();
+            showToast("All saved stations removed", "info");
+        }
+    });
+
+    // Click to copy coordinates
+    DOM.cityCoords?.addEventListener("click", () => {
+        if (!STATE.currentWeather?.coord) return;
+        const coordsText = `${STATE.currentWeather.coord.lat.toFixed(4)}, ${STATE.currentWeather.coord.lon.toFixed(4)}`;
+        navigator.clipboard.writeText(coordsText).then(() => {
+            showToast(`Coordinates copied: ${coordsText}`, "success");
+        }).catch(() => {
+            showToast(`Coordinates: ${coordsText}`, "info");
+        });
     });
 
     setupAutoRefreshTimer();
@@ -1698,11 +2179,19 @@ function startLocalStationClock(timezoneOffsetSec) {
         const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
         const stationTime = new Date(utcMs + timezoneOffsetSec * 1000);
 
-        DOM.currentTime.textContent = stationTime.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false
-        });
+        if (STATE.timeFormat === "12") {
+            DOM.currentTime.textContent = stationTime.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true
+            });
+        } else {
+            DOM.currentTime.textContent = stationTime.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            });
+        }
 
         DOM.currentDate.textContent = stationTime.toLocaleDateString("en-US", {
             weekday: "long",
@@ -1831,8 +2320,18 @@ function getBeaufortDescription(speed) {
 }
 
 function formatUTCTimestamp(epoch, offsetSec) {
-    const date = new Date((epoch + offsetSec) * 1000);
-    return date.toISOString().substring(11, 16);
+    const utcMs = epoch * 1000;
+    const localMs = utcMs + (offsetSec * 1000);
+    const date = new Date(localMs);
+    const hours = date.getUTCHours();
+    const mins = date.getUTCMinutes().toString().padStart(2, "0");
+
+    if (STATE.timeFormat === "12") {
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const h12 = hours % 12 || 12;
+        return `${h12}:${mins} ${ampm}`;
+    }
+    return `${hours.toString().padStart(2, "0")}:${mins}`;
 }
 
 function capitalizeWords(str) {

@@ -3514,3 +3514,381 @@ input:checked + .slider:before {
 .hidden {
     display: none !important;
 }
+
+/* ==========================================================================
+   AERIS 2.0 EXPANDED COMPONENT DESIGN SYSTEM
+   ========================================================================== */
+
+/* Offline Mode Banner */
+.offline-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 18px;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(15, 23, 42, 0.7) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    font-size: 11.5px;
+    color: #fef3c7;
+    animation: slideInDown 0.3s ease;
+}
+
+.offline-badge {
+    background: #f59e0b;
+    color: #000;
+    font-weight: 800;
+    font-size: 9px;
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.8px;
+}
+
+/* Error Retry Button */
+.error-retry-btn {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #fecaca;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.error-retry-btn:hover {
+    background: var(--danger);
+    color: #ffffff;
+}
+
+/* AI Weather Briefing Card */
+.assistant-briefing-card {
+    background: rgba(6, 18, 36, 0.75);
+    border: 1px solid var(--border-glow);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-top: 14px;
+    backdrop-filter: var(--glass-blur);
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.briefing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.briefing-kicker {
+    font-size: 8.5px;
+    font-family: var(--font-mono);
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    font-weight: 700;
+}
+
+.briefing-title {
+    font-family: var(--font-heading);
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+.briefing-headline {
+    font-size: 14px;
+    color: #e0f2fe;
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.briefing-summary {
+    font-size: 12.5px;
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+.briefing-telemetry-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.briefing-pill {
+    background: rgba(15, 33, 60, 0.6);
+    border: 1px solid rgba(65, 213, 255, 0.15);
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 90px;
+}
+
+.briefing-pill.highlight {
+    background: rgba(65, 213, 255, 0.12);
+    border-color: var(--cyan);
+}
+
+.pill-label {
+    font-size: 8px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    letter-spacing: 0.5px;
+}
+
+.pill-val {
+    font-size: 11.5px;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Stat Icon amber */
+.stat-amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+/* Coordinates copy button hover effect */
+button.coords-badge {
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+button.coords-badge:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(65, 213, 255, 0.1);
+}
+
+/* WHAT'S IT GOOD FOR? (Activity Intelligence) */
+.activity-intelligence-block {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.subpanel-header {
+    margin-bottom: 12px;
+}
+
+.subpanel-kicker {
+    font-size: 8.5px;
+    font-family: var(--font-mono);
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    display: block;
+}
+
+.subpanel-title {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 2px;
+}
+
+.activities-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.activity-badge-card {
+    background: rgba(5, 17, 33, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    transition: var(--transition-fast);
+}
+
+.activity-badge-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+}
+
+.act-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.act-icon {
+    font-size: 14px;
+}
+
+.act-name {
+    font-size: 9px;
+    font-family: var(--font-mono);
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.act-status {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.3px;
+}
+
+.status-rec {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-caution {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-not-rec {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Clothing Advisor */
+.clothing-advisor-block {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.clothing-advisor-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(6, 18, 36, 0.5);
+    border: 1px solid rgba(65, 213, 255, 0.15);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+}
+
+.clothing-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: rgba(65, 213, 255, 0.1);
+    border: 1px solid rgba(65, 213, 255, 0.25);
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.clothing-text-group strong {
+    font-size: 13px;
+    color: #ffffff;
+    display: block;
+}
+
+.clothing-text-group p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+    line-height: 1.4;
+}
+
+/* Inspector Summary Bar */
+.inspector-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    background: rgba(4, 15, 32, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+}
+
+.insp-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.insp-stat-lbl {
+    font-size: 8px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    letter-spacing: 0.5px;
+}
+
+.insp-stat-val {
+    font-size: 12px;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* Empty States */
+.empty-state-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: rgba(5, 15, 30, 0.4);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    gap: 10px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+.empty-state-icon {
+    font-size: 28px;
+    opacity: 0.6;
+}
+
+/* Saved cities header actions */
+.saved-header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 992px) {
+    .activities-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .inspector-summary-bar {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 680px) {
+    .activities-grid {
+        grid-template-columns: 1fr;
+    }
+    .inspector-summary-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .briefing-telemetry-row {
+        flex-direction: column;
+    }
+    .clothing-advisor-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
